@@ -7,11 +7,10 @@ import chromedriver_autoinstaller
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from bs4 import BeautifulSoup
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.wait import WebDriverWait
 
-from .data import Week, Day, Lesson, Free
+from .data import Week
 from .scrape import scrape_week
 
 
@@ -32,6 +31,9 @@ class WebuntisDriver(webdriver.Chrome):
 
         super().__init__(options=options, *args, **kwargs)
         self.debug = debug
+
+        self.weeks = {}
+        self.current_week = datetime.datetime.now().isocalendar().week
 
     def close(self):
         try:
@@ -74,13 +76,15 @@ class WebuntisDriver(webdriver.Chrome):
             return
         WebDriverWait(self, self.DELAY).until(expected_conditions.presence_of_element_located((criteria, name)))
 
-    def load_week(self, date: datetime.date) -> Week:
+    def load_week(self, week: datetime.date | int):
         """Load a week from the webuntis website"""
-        self.get_page(self.TIMETABLE_PAGE + "/" + date.strftime("%Y-%m-%d"), By.ID, "embedded-webuntis")
+        if isinstance(week, int):
+            week = datetime.date.fromisocalendar(datetime.datetime.now().year, week, 1)
+        if week.isocalendar().week in self.weeks:
+            return
+        self.get_page(self.TIMETABLE_PAGE + "/" + week.strftime("%Y-%m-%d"), By.ID, "embedded-webuntis")
         self.get_iframe(By.CLASS_NAME, "renderedEntry")
-        els = self.find_elements(By.CLASS_NAME, "renderedEntry")
-
-        return scrape_week(self.page_source)
+        self.weeks[week.isocalendar().week] = scrape_week(week, self.page_source)
 
 
 if __name__ == '__main__':

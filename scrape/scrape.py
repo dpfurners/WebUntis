@@ -6,6 +6,10 @@ import urllib.parse
 from .data import Week, Day, Lesson, Free
 
 
+CANCELLED = ["background-color: rgba(177, 179, 180, 0.3)", "background-color: rgba(177, 179, 180, 0.7)"]
+SUBSTITUTIONED = ["background-color: rgba(167, 129, 181, 0.3)", "background-color: rgba(167, 129, 181, 0.7)"]
+
+
 def write_page_source(source):
     with open("test.html", "w", encoding="utf-8") as f:
         soup = BeautifulSoup(source, "html.parser")
@@ -37,45 +41,72 @@ def resolve_free_days(soup: BeautifulSoup):
     return free
 
 
-def scrape_week(page_source=None) -> Week:
+def resolve_longer_hours(week: Week):
+    """for day in [d for d in week if isinstance(d, Day)]:
+        for i in range(len(day.lessons) - 1):
+            try:
+                if day.lessons[i].name == day.lessons[i + 1].name \
+                        and day.lessons[i].teacher == day.lessons[i + 1].teacher \
+                        and day.lessons[i].room == day.lessons[i + 1].room:
+                    day.lessons[i].end = day.lessons[i + 1].end
+                    day.lessons[i].duration = day.lessons[i].end - day.lessons[i].start
+                    if day.lessons[i].end != day.lessons[i + 1].start:
+                        day.lessons[i].breaks.append(
+                            (day.lessons[i].end,
+                             day.lessons[i + 1].start,
+                             day.lessons[i + 1].start - day.lessons[i].end))
+                    day.lessons[i].breaks.extend(day.lessons[i + 1].breaks)
+                    day.lessons.pop(i + 1)
+            except IndexError:
+                pass"""
+    return week
+
+
+def scrape_week(req_day: datetime.date, page_source=None) -> Week:
     if page_source is None:
         page_source = read_page_source()
     soup = BeautifulSoup(page_source, "html.parser")
     hours = soup.find_all("a", {"target": "_blank"}, href=True)
-    hours_styles = soup.find_all("a", {"target": "_blank"}, style=False)
     week_hours: list[Lesson] = []
     week: Week = Week([])
-    for hour, style in zip(hours, hours_styles):
+    for hour in hours:
         start, end = resolve_start_end(hour["href"])
         info = hour.find("table", {"class": "centerTable"})
-        classes, teacher, name, room = info.find_all("td")
+        try:
+            classes, teacher, name, room = [i.text for i in info.find_all("td")]
+        except ValueError:
+            classes, teacher, name = [i.text for i in info.find_all("td")]
+            room = "I251"
         canceled = False
         substitution = False
         if style := hour.find_next("div").get("style"):
             styles = style.split("; ")
-            if "background-color: rgba(177, 179, 180, 0.3)" in styles:
+            if CANCELLED[0] in styles or CANCELLED[1] in styles:
                 canceled = True
-            if "background-color: rgba(167, 129, 181, 0.7)" in styles:
+            if SUBSTITUTIONED[0] in styles or SUBSTITUTIONED[1] in styles:
                 substitution = True
 
-        week_hours.append(Lesson(name.text, classes.text, teacher.text, room.text, canceled, substitution,  start, end))
+        week_hours.append(Lesson(name, classes, teacher, room, start, end, canceled, substitution))
     week_hours.sort(key=lambda x: x.start)
+    print(len([hour for hour in week_hours]))
 
     free = resolve_free_days(soup)
-    today = datetime.date.today()
-    first_day = today - datetime.timedelta(days=today.isoweekday() - 1)
+    first_day = req_day - datetime.timedelta(days=req_day.isoweekday() - 1)
 
-    days = soup.find_all("div", {"class": "timetableGridColumn"})
     for i in range(5):
         if free[i]:
             week.days.append(free[i])
             continue
         d = Day(
             first_day + datetime.timedelta(days=i),
-            lessons=[day for day in week_hours if day.start.date() == first_day + datetime.timedelta(days=i)]
+            lessons=[day for day in week_hours
+                     if day.start.date() == first_day + datetime.timedelta(days=i) and not day.canceled],
+            canceled=[day for day in week_hours
+                      if day.start.date() == first_day + datetime.timedelta(days=i) and day.canceled]
         )
         week.days.append(d)
 
+    week = resolve_longer_hours(week)
     return week
 
 

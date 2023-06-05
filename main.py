@@ -9,8 +9,6 @@ from scrape import WebuntisDriver
 async def lifespan(application: FastAPI):
     driver = WebuntisDriver()
     driver.login()
-    week = driver.load_week(datetime.date.today())
-    print(week)
     yield
     driver.close()
 

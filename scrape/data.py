@@ -20,6 +20,7 @@ class Day:
     lessons: list[Lesson]
 
 
+@dataclass
 class Free:
     reason: str
 
@@ -31,6 +32,5 @@ class Week:
     def __iter__(self):
         return iter(self.days)
 
-
-
-
+    def __getitem__(self, item):
+        return self.days[item]

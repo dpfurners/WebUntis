@@ -1,3 +1,5 @@
+import logging
+
 from bs4 import BeautifulSoup
 
 import datetime
@@ -88,7 +90,6 @@ def scrape_week(req_day: datetime.date, page_source=None) -> Week:
 
         week_hours.append(Lesson(name, classes, teacher, room, start, end, canceled, substitution))
     week_hours.sort(key=lambda x: x.start)
-    print(len([hour for hour in week_hours]))
 
     free = resolve_free_days(soup)
     first_day = req_day - datetime.timedelta(days=req_day.isoweekday() - 1)
@@ -107,6 +108,7 @@ def scrape_week(req_day: datetime.date, page_source=None) -> Week:
         week.days.append(d)
 
     week = resolve_longer_hours(week)
+    logging.log(logging.INFO, f"Week {week} loaded...")
     return week
 
 

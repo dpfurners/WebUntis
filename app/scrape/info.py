@@ -1,29 +1,36 @@
+import datetime
+
 from .data import Day, Lesson, Week
 
 
-def day_lesson_info(day: Day):
+def day_lesson_info(day: Day, dt: datetime.datetime = None):
     """
     overall-lessons: the overall lesson count
     canceled-lessons: the canceled lesson count
     substitution-lessons: the substitution lesson count
     similar-lessons: the similar lesson count
     """
+    lessons = day.lessons
+    if dt:
+        lessons = [les for les in lessons if dt <= les.end]
     simultaneous_lessons = 0
-    canceled_lessons = len([les for les in day.lessons if les.canceled])
-    substitution_lessons = len([les for les in day.lessons if les.substitution])
-    for lesson in day.lessons:
-        if simultaneous_les := [les for les in day.lessons if les.start == lesson.start and les.end == lesson.end]:
+    canceled_lessons = len([les for les in lessons if les.canceled])
+    substitution_lessons = len([les for les in lessons if les.substitution])
+    for lesson in lessons:
+        if simultaneous_les := [les for les in lessons if les.start == lesson.start and les.end == lesson.end]:
             simultaneous_lessons += len(simultaneous_les) - 1
     return {
-        "overall-lessons": len(day.lessons) - simultaneous_lessons/2,
+        "overall-lessons": len(lessons) - simultaneous_lessons/2,
         "canceled-lessons": canceled_lessons,
         "substitution-lessons": substitution_lessons,
         "similar-lessons": None}
 
 
-def day_lessons_overview(day: Day):
+def day_lessons_overview(day: Day, dt: datetime.datetime = None):
     lessons = []
     for les in day.lessons:
+        if dt and (dt >= les.end):
+            continue
         if les.name in [ln.name for ln in lessons] and \
                 les.start in [ls.start for ls in lessons] and \
                 les.end in [le.end for le in lessons]:
@@ -32,13 +39,14 @@ def day_lessons_overview(day: Day):
     return [lesn.name for lesn in lessons]
 
 
-def day_info(day: Day):
+def day_info(day: Day, dt: datetime.datetime = None):
     return {
         "date": {
             "day": day.date,
+            "time": dt.strftime("%H:%M") if isinstance(dt, datetime.datetime) else "all",
             "week": day.date.isocalendar().week,
             "weekday": day.date.strftime("%A")},
-        "lesson-info": day_lesson_info(day),
-        "lesson-overview": day_lessons_overview(day),
+        "lesson-info": day_lesson_info(day, dt),
+        "lesson-overview": day_lessons_overview(day, dt),
         "lessons": day.lessons
     }

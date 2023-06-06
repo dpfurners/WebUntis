@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 import time
 import getpass
@@ -62,14 +63,14 @@ class WebuntisDriver(webdriver.Chrome):
         password_field.send_keys(password)
         login_button.click()
 
-    def get_page(self, url: str, criteria: By = None, name: str = None):
+    def get_page(self, url: str, criteria: By | str = None, name: str = None):
         self.get(url)
         if not criteria and not name:
             time.sleep(self.DELAY)
             return
         WebDriverWait(self, self.DELAY).until(expected_conditions.presence_of_element_located((criteria, name)))
 
-    def get_iframe(self, criteria: By = None, name: str = None):
+    def get_iframe(self, criteria: By | str = None, name: str = None):
         self.switch_to.frame(0)
         if not criteria and not name:
             time.sleep(self.DELAY)
@@ -85,6 +86,8 @@ class WebuntisDriver(webdriver.Chrome):
         self.get_page(self.TIMETABLE_PAGE + "/" + week.strftime("%Y-%m-%d"), By.ID, "embedded-webuntis")
         self.get_iframe(By.CLASS_NAME, "renderedEntry")
         self.weeks[week.isocalendar().week] = scrape_week(week, self.page_source)
+        print(f"Week {week.isocalendar().week} loaded...")
+        logging.getLogger("app").info(f"Week {week.isocalendar().week} loaded...")
 
 
 if __name__ == '__main__':

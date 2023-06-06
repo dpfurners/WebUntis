@@ -3,7 +3,7 @@ import uvicorn
 
 from fastapi import FastAPI
 
-from scrape import WebuntisDriver
+from scrape import WebuntisDriver, day_info
 
 
 async def lifespan(application: FastAPI):
@@ -42,7 +42,8 @@ async def get_day_info(day: datetime.date):
     global driver
     if day.isocalendar().week not in driver.weeks:
         driver.load_week(day)
-    return driver.weeks[day.isocalendar().week][day.isocalendar().weekday-1]
+    return day_info(driver.weeks[day.isocalendar().week][day.isocalendar().weekday-1])
+
 
 @app.get("/day/{day}")
 async def get_day(day: datetime.date | None):

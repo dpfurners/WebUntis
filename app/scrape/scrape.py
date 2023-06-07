@@ -108,7 +108,6 @@ def scrape_week(req_day: datetime.date, page_source=None) -> Week:
         week.days.append(d)
 
     week = resolve_longer_hours(week)
-    logging.log(logging.INFO, f"Week {week} loaded...")
     return week
 
 

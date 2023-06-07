@@ -1,19 +1,27 @@
 import datetime
+from pathlib import Path
+
 import uvicorn
 
 from fastapi import FastAPI
 
-from scrape import WebuntisDriver, day_info
+from scrape import WebuntisDriver
 
-from routers import day, week, year
+from routers import day
 from internal import admin
+from logs import CustomizeLogger
+
+config_path = Path(__file__).parent / "logs" / "config.json"
+
+logger = CustomizeLogger.make_logger(config_path)
 
 
 async def lifespan(application: FastAPI):
-    driver = WebuntisDriver()
+    global logger
+    application.logger = logger
+    driver = WebuntisDriver(True)
     driver.login()
     driver.load_week(datetime.date.today())
-    application.
     application.state.driver = driver
     yield
     application.state.driver.close()

@@ -86,7 +86,6 @@ class WebuntisDriver(webdriver.Chrome):
         self.get_page(self.TIMETABLE_PAGE + "/" + week.strftime("%Y-%m-%d"), By.ID, "embedded-webuntis")
         self.get_iframe(By.CLASS_NAME, "renderedEntry")
         self.weeks[week.isocalendar().week] = scrape_week(week, self.page_source)
-        print(f"Week {week.isocalendar().week} loaded...")
         logging.getLogger("app").info(f"Week {week.isocalendar().week} loaded...")
 
 

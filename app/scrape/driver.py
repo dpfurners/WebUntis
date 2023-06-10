@@ -91,7 +91,7 @@ class WebuntisDriver(webdriver.Chrome):
         self.weeks[week.isocalendar().week] = scrape_week(week, self.page_source)
         logging.getLogger("app").info(f"Week {week.isocalendar().week} loaded...")
 
-    def load_weeks(self, weeks: list[int | datetime.date]):
+    def load_weeks(self, *weeks: int | datetime.date):
         """Load multiple weeks from the webuntis website"""
         for week in weeks:
             self.load_week(week)

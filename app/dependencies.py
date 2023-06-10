@@ -13,7 +13,8 @@ async def get_driver(request: Request):
 async def load_week(week: int | datetime.date, driver: WebuntisDriver):
     if isinstance(week, datetime.datetime):
         week = week.date()
-    driver.load_week(week)
+    if not week.isocalendar().weekday in (6, 7):
+        driver.load_week(week)
 
 
 async def datetime_parameter(request: Request, dt: datetime.date | datetime.datetime = None,  time_specific: bool = False):
@@ -26,7 +27,7 @@ async def datetime_parameter(request: Request, dt: datetime.date | datetime.date
     if isinstance(dt, datetime.datetime) and not time_specific:
         dt = dt.date()
     await load_week(dt, driver)
-    return datetime
+    return dt
 
 
 async def date_parameter(request: Request, day: datetime.date = None):

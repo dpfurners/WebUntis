@@ -59,6 +59,9 @@ class Free:
 class Week:
     days: list[Day | Free]
 
+    def __len__(self):
+        return len(self.days)
+
     def __iter__(self):
         return iter(self.days)
 
@@ -68,11 +71,15 @@ class Week:
     def __setitem__(self, key, value):
         self.days[key] = value
 
+    """def __eq__(self, other):
+        return other in [day.date for day in self.days]
+
     def __contains__(self, item: datetime.date | datetime.datetime):
-        """Check if the day is in this week"""
+        """#Check if the day is in this week"""
+    """
         if isinstance(item, datetime.datetime):
             item = item.date()
-        return item in [day.date for day in self.days]
+        return item in [day.date for day in self.days]"""
 
 
 @dataclass
@@ -107,43 +114,63 @@ class Collection:
         return [self.get_week(week) for week in weeks]
 
     def get_day(self, day: datetime.date | datetime.datetime) -> int | Day | Free:
+        if isinstance(day, datetime.datetime):
+            day = day.date()
         week = day.isocalendar().week
-        if week not in self:
+        if week not in self.weeks:
             return week
-        if day.date() not in self.weeks[week].days:
-            return day.isocalendar().week
         return self.weeks[week].days[day.isocalendar().weekday - 1]
 
     def get_days(self, *days: datetime.date | datetime.datetime) -> list[int | Day | Free]:
         return [self.get_day(day) for day in days]
 
-    def get_between(self, start: datetime.date | datetime.datetime, end: datetime.date | datetime.datetime) -> list[int | Week]:
+    def get_between(
+            self,
+            start: datetime.date | datetime.datetime,
+            end: datetime.date | datetime.datetime
+    ) -> list[int | Week] | Week | Day | Free:
         start_week = start.isocalendar().week
         end_week = end.isocalendar().week
         weeks_between = range(start_week, end_week + 1) if start_week != end_week else [start_week]
-        weeks = self.get_weeks(*weeks_between)
+        weeks: list[Week | int] = self.get_weeks(*weeks_between)
         if not_loaded := [week for week in weeks if isinstance(week, int)]:
             return not_loaded
         # Remove days before start
         start_date = start.date() if isinstance(start, datetime.datetime) else start
         start_week_days = weeks[0]
-        start_week_days_new = Week([day for day in start_week_days.days if day.date >= start_date])
         if isinstance(start, datetime.datetime):
+            start_week_days_new = Week([day for day in start_week_days.days if day.date >= start_date])
             if not isinstance(start_week_days.days[0], Free):
-                start_week_days_new[0] = dataclasses.replace(start_week_days.days[0])
-                start_week_days_new[0].lessons = [lesson for lesson in start_week_days.days[0].lessons if lesson.end >= start]
+                start_week_days_new[0] = dataclasses.replace(start_week_days_new.days[0])
+                start_week_days_new[0].lessons = [
+                    lesson for lesson in start_week_days_new.days[0].lessons if lesson.end >= start
+                ]
+        else:
+            start_week_days_new = Week([day for day in start_week_days.days if day.date >= start_date])
 
         weeks[0] = start_week_days_new
 
         # Remove days after end
         end_date = end.date() if isinstance(end, datetime.datetime) else end
         end_week_days = weeks[-1]
-        end_week_days_new = Week([day for day in end_week_days.days if day.date <= end_date])
         if isinstance(end, datetime.datetime):
+            end_week_days_new = Week([day for day in end_week_days.days if day.date <= end_date])
             if not isinstance(end_week_days.days[-1], Free):
-                end_week_days_new[-1] = dataclasses.replace(end_week_days.days[-1])
-                end_week_days_new[-1].lessons = [lesson for lesson in end_week_days.days[-1].lessons if lesson.start <= end]
+                end_week_days_new[-1] = dataclasses.replace(end_week_days_new.days[-1])
+                end_week_days_new[-1].lessons = [
+                    lesson for lesson in end_week_days_new.days[-1].lessons if lesson.start <= end
+                ]
+        else:
+            end_week_days_new = Week([day for day in end_week_days.days if day.date <= end_date])
 
         weeks[-1] = end_week_days_new
+
+        # Only one week between start and end
+        if len(weeks) == 1:
+            weeks: Week = weeks[0]
+
+        # Only one day between start and end
+        if len(weeks) == 1:
+            weeks: Day | Free = weeks[0]
 
         return weeks

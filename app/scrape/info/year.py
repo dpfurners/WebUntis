@@ -1,9 +1,9 @@
 import datetime
 
-from .data import Day, Lesson, Week
+from app.scrape.data import Day, Lesson, Week
 
 
-def day_lesson_info(day: Day, dt: datetime.datetime = None):
+def year_lesson_info(day: Day, dt: datetime.datetime = None):
     """
     overall-lessons: the overall lesson count
     canceled-lessons: the canceled lesson count
@@ -26,7 +26,7 @@ def day_lesson_info(day: Day, dt: datetime.datetime = None):
         "similar-lessons": None}
 
 
-def day_lessons_overview(day: Day, dt: datetime.datetime = None):
+def year_lessons_overview(day: Day, dt: datetime.datetime = None):
     lessons = []
     for les in day.lessons:
         if dt and (dt >= les.end):
@@ -39,14 +39,13 @@ def day_lessons_overview(day: Day, dt: datetime.datetime = None):
     return [lesn.name for lesn in lessons]
 
 
-def day_info(day: Day, dt: datetime.datetime = None):
+def year_info(day: Day, dt: datetime.datetime = None):
     return {
         "date": {
             "day": day.date,
             "time": dt.strftime("%H:%M") if isinstance(dt, datetime.datetime) else "all",
             "week": day.date.isocalendar().week,
             "weekday": day.date.strftime("%A")},
-        "lesson-info": day_lesson_info(day, dt),
-        "lesson-overview": day_lessons_overview(day, dt),
-        "lessons": day.lessons
+        "lesson-info": year_lesson_info(day, dt),
+        "lesson-overview": year_lessons_overview(day, dt),
     }

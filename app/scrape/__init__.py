@@ -3,6 +3,6 @@ from .info import *
 
 __all__ = [
     "WebuntisDriver",
-    "day_info"
+    "day_info", "week_info", "year_info"
 ]
 

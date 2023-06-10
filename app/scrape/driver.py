@@ -33,7 +33,7 @@ class WebuntisDriver(webdriver.Chrome):
         super().__init__(options=options, *args, **kwargs)
         self.debug = debug
 
-        self.weeks = {}
+        self.weeks: dict[int, Week] = {}
         self.current_week = datetime.datetime.now().isocalendar().week
 
     def close(self):

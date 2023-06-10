@@ -11,7 +11,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.wait import WebDriverWait
 
-from .data import Week
+from .data import Collection, Week
 from .scrape import scrape_week
 
 
@@ -33,7 +33,7 @@ class WebuntisDriver(webdriver.Chrome):
         super().__init__(options=options, *args, **kwargs)
         self.debug = debug
 
-        self.weeks: dict[int, Week] = {}
+        self.weeks: Collection = Collection({})
         self.current_week = datetime.datetime.now().isocalendar().week
 
     def close(self):
@@ -77,8 +77,11 @@ class WebuntisDriver(webdriver.Chrome):
             return
         WebDriverWait(self, self.DELAY).until(expected_conditions.presence_of_element_located((criteria, name)))
 
-    def load_week(self, week: datetime.date | int):
+    def load_week(self, week: datetime.date | int = None):
         """Load a week from the webuntis website"""
+        if week is None:
+            week = datetime.date.today()
+            self.current_week = week.isocalendar().week
         if isinstance(week, int):
             week = datetime.date.fromisocalendar(datetime.datetime.now().year, week, 1)
         if week.isocalendar().week in self.weeks:
@@ -87,6 +90,11 @@ class WebuntisDriver(webdriver.Chrome):
         self.get_iframe(By.CLASS_NAME, "renderedEntry")
         self.weeks[week.isocalendar().week] = scrape_week(week, self.page_source)
         logging.getLogger("app").info(f"Week {week.isocalendar().week} loaded...")
+
+    def load_weeks(self, weeks: list[int | datetime.date]):
+        """Load multiple weeks from the webuntis website"""
+        for week in weeks:
+            self.load_week(week)
 
 
 if __name__ == '__main__':

@@ -1,52 +1,39 @@
 import datetime
+from dataclasses import dataclass, field
 
-from app.scrape.data import Day, Lesson, Week
-
-
-def day_lesson_info(day: Day, dt: datetime.datetime = None):
-    """
-    overall-lessons: the overall lesson count
-    canceled-lessons: the canceled lesson count
-    substitution-lessons: the substitution lesson count
-    similar-lessons: the similar lesson count
-    """
-    lessons = day.lessons
-    if dt:
-        lessons = [les for les in lessons if dt <= les.end]
-    simultaneous_lessons = 0
-    canceled_lessons = len([les for les in lessons if les.canceled])
-    substitution_lessons = len([les for les in lessons if les.substitution])
-    for lesson in lessons:
-        if simultaneous_les := [les for les in lessons if les.start == lesson.start and les.end == lesson.end]:
-            simultaneous_lessons += len(simultaneous_les) - 1
-    return {
-        "overall-lessons": len(lessons) - simultaneous_lessons/2,
-        "canceled-lessons": canceled_lessons,
-        "substitution-lessons": substitution_lessons,
-        "similar-lessons": None}
+from app.scrape.data import Day
+from app.scrape.info.model import InfoCollection, DateInfo
 
 
-def day_lessons_overview(day: Day, dt: datetime.datetime = None):
+def day_lessons_overview(day: Day):
+    start_end = [(les.start, les.end) for les in day.lessons]
+    dups = []
+    for start, end in start_end:
+        if dup := [i for i, x in enumerate(start_end) if x == (start, end)]:
+            if dup not in dups:
+                dups.append(dup)
     lessons = []
-    for les in day.lessons:
-        if dt and (dt >= les.end):
-            continue
-        if les.name in [ln.name for ln in lessons] and \
-                les.start in [ls.start for ls in lessons] and \
-                les.end in [le.end for le in lessons]:
-            continue
-        lessons.append(les)
-    return [lesn.name for lesn in lessons]
+    for les in dups:
+        if len(les) == 1:
+            lessons.append(day.lessons[les[0]].name)
+        else:
+            if day.lessons[les[0]].name == day.lessons[les[1]].name:
+                lessons.append(day.lessons[les[0]].name)
+            else:
+                lessons.append(f"{day.lessons[les[0]].name} | {day.lessons[les[1]].name}")
+    return lessons
 
 
-def day_info(day: Day, dt: datetime.datetime = None):
-    return {
-        "date": {
-            "day": day.date,
-            "time": dt.strftime("%H:%M") if isinstance(dt, datetime.datetime) else "all",
-            "week": day.date.isocalendar().week,
-            "weekday": day.date.strftime("%A")},
-        "lesson-info": day_lesson_info(day, dt),
-        "lesson-overview": day_lessons_overview(day, dt),
-        "lessons": day.lessons
-    }
+@dataclass
+class DayInfo(InfoCollection):
+    date_info: DateInfo = field(default_factory=DateInfo)
+    lesson_overview: list[str] = field(default_factory=list[str])
+
+    def __init__(self, day: Day, dt: datetime.datetime = None):
+        self.date_info = DateInfo(day, dt)
+        self.lesson_overview = day_lessons_overview(day)
+        super().__init__(day)
+
+
+def day_info(day: Day, dt: datetime.datetime = None) -> DayInfo:
+    return DayInfo(day, dt)

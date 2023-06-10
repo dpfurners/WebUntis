@@ -3,7 +3,8 @@ import datetime
 from fastapi import APIRouter
 from app.dependencies import DateTimeParameter, DateParameter, DriverDependency, TimeParameter
 from app.scrape import day_info
-from app.scrape.data import Lesson, Day
+from app.scrape.data import Day, Free
+from app.scrape.info.day import DayInfo
 
 router = APIRouter(
     prefix="/day",
@@ -13,23 +14,24 @@ router = APIRouter(
 
 
 @router.get("/")
-async def get_day_info(driver: DriverDependency, day: DateTimeParameter) -> dict:
+async def get_day_info(driver: DriverDependency, day: DateTimeParameter) -> DayInfo | Free:
+    if day.isocalendar().weekday in (6, 7):
+        return Free(day.date() if isinstance(day, datetime.datetime) else day, "Weekend")
     if isinstance(day, datetime.datetime):
-        return day_info(driver.weeks[day.isocalendar().week][day.isocalendar().weekday - 1], day)
-    return day_info(driver.weeks[day.isocalendar().week][day.isocalendar().weekday - 1])
+        return day_info(driver.weeks.get_between(
+            day, datetime.datetime.combine(day.date(), datetime.time(23, 59, 59), day.tzinfo)), day)
+    return day_info(driver.weeks.get_day(day))
 
 
 @router.get("/date")
-async def get_day_date(driver: DriverDependency, date: DateParameter) -> Day:
-    return driver.weeks[date.isocalendar().week][date.isocalendar().weekday-1]
+async def get_day_date(driver: DriverDependency, date: DateParameter) -> Day | dict | Free:
+    if date.isocalendar().weekday in (6, 7):
+        return Free(date, "Weekend")
+    return driver.weeks.get_day(date)
 
 
 @router.get("/time", description="Returns the day with the lessons at the given time")
-async def get_day_time(driver: DriverDependency, time: TimeParameter) -> list[Lesson]:
-    day = driver.weeks[time.isocalendar().week][time.isocalendar().weekday-1]
-    day_else = []
-    for lesson in day.lessons:
-        if lesson.end >= time:
-            day_else.append(lesson)
-    return day_else
-
+async def get_day_time(driver: DriverDependency, time: TimeParameter) -> Day | Free:
+    if time.isocalendar().weekday in (6, 7):
+        return Free(time.date(), "Weekend")
+    return driver.weeks.get_between(time, datetime.datetime.combine(time.date(), datetime.time(23, 59, 59), time.tzinfo))

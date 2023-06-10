@@ -37,7 +37,7 @@ def resolve_free_days(soup: BeautifulSoup):
         if style := day.get("style"):
             style = style.split("; ")
             if "background-color: rgba(162, 216, 244, 0.75);" in style:
-                free.append(Free(day.text))
+                free.append(day.text)
                 continue
         free.append(None)
     return free
@@ -96,7 +96,7 @@ def scrape_week(req_day: datetime.date, page_source=None) -> Week:
 
     for i in range(5):
         if free[i]:
-            week.days.append(free[i])
+            week.days.append(Free(first_day + datetime.timedelta(days=i), free[i]))
             continue
         d = Day(
             first_day + datetime.timedelta(days=i),

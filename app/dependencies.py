@@ -11,6 +11,8 @@ async def get_driver(request: Request):
 
 
 async def load_week(week: int | datetime.date, driver: WebuntisDriver):
+    if isinstance(week, datetime.datetime):
+        week = week.date()
     driver.load_week(week)
 
 

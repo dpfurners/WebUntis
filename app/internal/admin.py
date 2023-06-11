@@ -20,4 +20,4 @@ async def load_week(driver: DriverDependency, week: int | datetime.date):
 
 @router.get("/already")
 async def already_loaded(driver: DriverDependency):
-    return {"message": f"Weeks {list(driver.weeks.keys())} loaded..."}
+    return {"message": f"Weeks {list(driver.weeks.weeks.keys())} loaded..."}

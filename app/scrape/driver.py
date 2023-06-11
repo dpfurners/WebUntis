@@ -5,6 +5,7 @@ import time
 import getpass
 
 import chromedriver_autoinstaller
+import selenium.common.exceptions
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -16,6 +17,7 @@ from .scrape import scrape_week
 
 
 class WebuntisDriver(webdriver.Chrome):
+    LOGOUT_PAGE = "https://neilo.webuntis.com/WebUntis/saml/logout"
     LOGIN_PAGE = "https://neilo.webuntis.com/WebUntis/?school=htl1-innsbruck#/basic/login"
     TIMETABLE_PAGE = "https://neilo.webuntis.com/timetable-students-my"
     ABSENCES_PAGE = "https://neilo.webuntis.com/student-absences"
@@ -35,6 +37,8 @@ class WebuntisDriver(webdriver.Chrome):
 
         self.weeks: Collection = Collection({})
         self.current_week = datetime.datetime.now().isocalendar().week
+        self.current_school = self.LOGIN_PAGE
+        self.account_status: bool = False
 
     def close(self):
         try:
@@ -43,7 +47,7 @@ class WebuntisDriver(webdriver.Chrome):
             pass
 
     def login(self, username: str = None, password: str = None):
-        self.get_page(self.LOGIN_PAGE, By.ID, "app")
+        self.get_page(self.LOGIN_PAGE, By.ID, "app", True)
         if username is None:
             username = os.getenv("username")
             if username is None:
@@ -63,12 +67,34 @@ class WebuntisDriver(webdriver.Chrome):
         password_field.send_keys(password)
         login_button.click()
 
-    def get_page(self, url: str, criteria: By | str = None, name: str = None):
-        self.get(url)
-        if not criteria and not name:
-            time.sleep(self.DELAY)
-            return
-        WebDriverWait(self, self.DELAY).until(expected_conditions.presence_of_element_located((criteria, name)))
+        WebDriverWait(self, self.DELAY).until(expected_conditions.presence_of_element_located((By.ID, "root")))
+        try:
+
+            username_field = self.find_element(
+               By.XPATH, "/html/body/div/div/div/div[2]/div[1]/div/div[2]/div/div[2]/div/form/div[1]/div/input"
+            )
+            print("Element found")
+            self.account_status = False
+            return False
+        except selenium.common.exceptions.NoSuchElementException:
+            self.account_status = True
+            return True
+
+    def logout(self):
+        self.get_page(self.LOGOUT_PAGE, By.ID, "app")
+        self.account_status = False
+        return True
+
+    def get_page(self, url: str, criteria: By | str = None, name: str = None, logging_in: bool = False):
+        if self.account_status or logging_in:
+            self.get(url)
+            if not criteria and not name:
+                time.sleep(self.DELAY)
+                return
+            WebDriverWait(self, self.DELAY).until(expected_conditions.presence_of_element_located((criteria, name)))
+            return True
+        else:
+            return False
 
     def get_iframe(self, criteria: By | str = None, name: str = None):
         self.switch_to.frame(0)

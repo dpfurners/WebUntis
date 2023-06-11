@@ -129,6 +129,11 @@ class Collection:
             start: datetime.date | datetime.datetime,
             end: datetime.date | datetime.datetime
     ) -> list[int | Week] | Week | Day | Free:
+        if not start.tzinfo and isinstance(start, datetime.datetime):
+            start = datetime.datetime.combine(start.date(), start.time(), tzinfo=datetime.timezone(datetime.timedelta(seconds=7200)))
+        if not end.tzinfo and isinstance(end, datetime.datetime):
+            end = datetime.datetime.combine(end.date(), end.time(), tzinfo=datetime.timezone(datetime.timedelta(seconds=7200)))
+
         start_week = start.isocalendar().week
         end_week = end.isocalendar().week
         weeks_between = range(start_week, end_week + 1) if start_week != end_week else [start_week]

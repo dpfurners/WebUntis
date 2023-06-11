@@ -1,7 +1,7 @@
 import datetime
 from dataclasses import dataclass, field
 
-from app.scrape.data import Day, Week
+from app.scrape.data import Day, Week, Free
 
 
 @dataclass
@@ -31,6 +31,12 @@ class LessonInfo:
 
 
 @dataclass
+class FreeLessonInfo(LessonInfo):
+    free_days: int = field(default=0)
+    free_because: list[str] = field(default_factory=list[str])
+
+
+@dataclass
 class DateInfo:
     day: datetime.date
     time: datetime.datetime | str
@@ -46,23 +52,37 @@ class DateInfo:
 
 @dataclass
 class InfoCollection:
-    lesson_info: LessonInfo = field(default_factory=LessonInfo)
+    lesson_info: LessonInfo | FreeLessonInfo = field(default_factory=LessonInfo)
 
     def __init__(self, *data: Day | Week):
         self.lesson_info = self._lesson_info(*data)
 
     @staticmethod
-    def _lesson_info(*data: Day | Week) -> LessonInfo:
+    def _lesson_info(*data: Day | Week | Free) -> LessonInfo | FreeLessonInfo:
         days = []
         if isinstance(data[0], Week):
             for week in data:
                 days += week.days
         else:
-            days = data
+            days = list(data)
 
-        lesson_info = LessonInfo()
+        try:
+            for day in days:
+                day.__getattribute__("lessons")
+            lesson_info = LessonInfo()
+        except AttributeError as e:
+            lesson_info = FreeLessonInfo()
 
         for day in days:
+            # print(type(day), isinstance(day, Free), day.__getattribute__("reason"))
+            try:
+                day.__getattribute__("reason")
+                lesson_info.free_days += 1
+                if day.reason not in lesson_info.free_because:
+                    lesson_info.free_because.append(day.reason)
+                    continue
+            except AttributeError as e:
+                pass
             lessons = day.lessons
             simultaneous_lessons = 0
             lesson_info.cancelled_lessons += len([les for les in lessons if les.canceled])

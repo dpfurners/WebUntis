@@ -6,6 +6,7 @@ import getpass
 
 import chromedriver_autoinstaller
 import selenium.common.exceptions
+from fastapi import HTTPException
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -113,9 +114,12 @@ class WebuntisDriver(webdriver.Chrome):
         if week.isocalendar().week in self.weeks:
             return
         self.get_page(self.TIMETABLE_PAGE + "/" + week.strftime("%Y-%m-%d"), By.ID, "embedded-webuntis")
-        self.get_iframe(By.CLASS_NAME, "renderedEntry")
-        self.weeks[week.isocalendar().week] = scrape_week(week, self.page_source)
-        logging.getLogger("app").info(f"Week {week.isocalendar().week} loaded...")
+        try:
+            self.get_iframe(By.CLASS_NAME, "renderedEntry")
+            self.weeks[week.isocalendar().week] = scrape_week(week, self.page_source)
+            logging.getLogger("app").info(f"Week {week.isocalendar().week} loaded...")
+        except:
+            HTTPException(404, "No Data Found")
 
     def load_weeks(self, *weeks: int | datetime.date):
         """Load multiple weeks from the webuntis website"""

@@ -18,9 +18,9 @@ logger = CustomizeLogger.make_logger(config_path)
 async def lifespan(application: FastAPI):
     global logger
     application.logger = logger
-    driver = WebuntisDriver()
+    driver = WebuntisDriver(True)
     driver.login()
-    # driver.load_week(driver.current_week)
+    driver.load_week(driver.current_week)
     application.state.driver = driver
     yield
     application.state.driver.close()

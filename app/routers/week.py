@@ -13,12 +13,12 @@ router = APIRouter(
 )
 
 
-@router.get("/")
+@router.get("/", summary="Get information about the current week")
 async def get_week_info(driver: DriverDependency, week: DateParameter) -> WeekInfo | Free:
     return week_info(driver.weeks.get_week(week))
 
 
-@router.get("/date")
-async def get_day_date(driver: DriverDependency, date: DateParameter) -> Day | dict | Free:
+@router.get("/date", summary="Get the days of a week")
+async def get_week_date(driver: DriverDependency, date: DateParameter) -> Day | dict | Free:
     return driver.weeks.get_weeks(date)
 

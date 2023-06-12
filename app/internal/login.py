@@ -12,17 +12,17 @@ router = APIRouter(
 )
 
 
-@router.get("/login")
-async def load_week(driver: DriverNoAccountDepencency, username: str, password: str):
+@router.get("/login", summary="Login to the account")
+async def account_login(driver: DriverNoAccountDepencency, username: str, password: str):
     driver.login(username, password)
     return {"message": f"Logged in as {username}"}
 
 
-@router.get("/logout")
-async def already_loaded(driver: DriverDependency):
+@router.get("/logout", summary="Logout of the account")
+async def account_logout(driver: DriverDependency):
     return {"message": f"You are now logged out"}
 
 
-@router.get("/setschool")
+@router.get("/setschool", summary="Set the school (Not Implemented)")
 async def set_school(driver: DriverNoAccountDepencency):
     return {"message": "New School Set"}

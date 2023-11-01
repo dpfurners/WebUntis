@@ -1,0 +1,7 @@
+{
+  "htl1":{
+    "login": "https://neilo.webuntis.com/WebUntis/?school=htl1-innsbruck#/basic/login",
+    "time-table": "https://neilo.webuntis.com/timetable-students-my",
+    "absences": "https://neilo.webuntis.com/student-absences"
+  }
+}

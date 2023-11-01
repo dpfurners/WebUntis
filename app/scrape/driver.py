@@ -5,6 +5,7 @@ import time
 import getpass
 
 import chromedriver_autoinstaller
+import chromedriver_autoinstaller_fix
 import selenium.common.exceptions
 from fastapi import HTTPException
 from selenium import webdriver
@@ -26,12 +27,15 @@ class WebuntisDriver(webdriver.Chrome):
 
     def __init__(self, debug: bool = False, *args, **kwargs):
         chromedriver_autoinstaller.install()
+        chromedriver_autoinstaller_fix.install()
 
         options = Options()
         options.add_argument("--enable-javascript")
         if not debug:
             options.add_argument('--headless')
             options.add_argument('--disable-gpu')
+            options.add_argument('--no-sandbox')
+            options.add_argument('--disable-dev-shm-usage')
 
         super().__init__(options=options, *args, **kwargs)
         self.debug = debug
